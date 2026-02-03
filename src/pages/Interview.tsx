@@ -119,66 +119,35 @@ const Interview = () => {
   // Create an array of stakeholders from the scenario
   const allStakeholders: Stakeholder[] = [...scenario.stakeholders];
 
-  /**
-   * --------------------------------------------------
-   * Determine which stakeholder object is active
-   * --------------------------------------------------
-   *
-   * If activeStakeholderId matches the Senior Engineer ID,
-   * use the global seniorEngineer object.
-   *
-   * Otherwise find the stakeholder in the scenario list.
-   * If not found, fallback to null.
-   */
+  /* Determine which stakeholder object is active */
   const activeStakeholder =
     activeStakeholderId === seniorEngineer.id
       ? seniorEngineer
       : allStakeholders.find((s) => s.id === activeStakeholderId) || null;
 
-  /**
-   * Get the message list for the active stakeholder.
-   * If none exists yet, default to an empty array.
+  /*
+  Get the message list for the active stakeholder
+  and if none exists yet, default to an empty array
    */
   const currentMessages = chatHistories[activeStakeholderId] || [];
 
-  /**
-   * Boolean flag: are we chatting with the Senior Engineer?
-   * Used to switch UI behavior in ChatInterface and RequirementsPanel.
-   */
+  // Check if chatting to SSE
   const isEngineerChat = activeStakeholderId === seniorEngineer.id;
 
-  /**
-   * ==================================================
-   * handleSendMessage()
-   * ==================================================
-   *
-   * Called when the user submits a message in ChatInterface.
-   *
-   * Steps:
-   * 1. Create user message object
-   * 2. Add it immediately to state (optimistic UI)
-   * 3. Set loading true
-   * 4. Generate simulated assistant reply
-   * 5. Add assistant reply to state
-   * 6. Set loading false
-   */
+  // Called when the user submits a message in ChatInterface
   const handleSendMessage = useCallback(
     async (content: string) => {
-      // If there is no active stakeholder selected, do nothing
       if (!activeStakeholder) return;
 
       // Build a message object for the user's message
       const userMessage: Message = {
-        id: crypto.randomUUID(), // unique ID for React lists
-        role: "user", // who sent it
-        content, // text body
-        timestamp: new Date(), // when it was sent
+        id: crypto.randomUUID(),
+        role: "user",
+        content,
+        timestamp: new Date(),
       };
 
-      /**
-       * Optimistic UI update:
-       * Add the user's message immediately so the UI feels responsive.
-       */
+      // Add the users message immediately so the UI feels responsive
       setChatHistories((prev) => ({
         ...prev,
         [activeStakeholderId]: [
@@ -187,14 +156,11 @@ const Interview = () => {
         ],
       }));
 
-      // Show typing indicator / disable input
+      // Show typing indicator and disable input
       setIsLoading(true);
 
       try {
-        /**
-         * UI-only assistant reply generation.
-         * A real implementation would call an LLM API.
-         */
+        // Mock assistant reply ~ real implementation would call an LLM/AI
         const reply = makeAssistantReply({
           stakeholder: activeStakeholder,
           scenarioTitle: scenario.title,
@@ -211,7 +177,7 @@ const Interview = () => {
           timestamp: new Date(),
         };
 
-        // Add assistant message to the same stakeholder's chat history
+        // Add assistant message to the same stakeholders chat history
         setChatHistories((prev) => ({
           ...prev,
           [activeStakeholderId]: [
@@ -220,23 +186,17 @@ const Interview = () => {
           ],
         }));
       } catch (err) {
-        // If anything fails, log and show a toast
         console.error(err);
         toast.error("Failed to generate response.");
       } finally {
-        // Always stop the loading indicator
         setIsLoading(false);
       }
     },
-    // Dependencies: if these values change, rebuild the callback
+    // If these values change, rebuild the callback
     [activeStakeholder, activeStakeholderId, isEngineerChat, requirements, scenario]
   );
 
-  /**
-   * ==================================================
-   * Requirement handlers
-   * ==================================================
-   */
+  /* Requirement handlers */
 
   // Adds a requirement and shows confirmation toast
   const handleAddRequirement = async (requirement: Omit<Requirement, "id">) => {
@@ -251,43 +211,26 @@ const Interview = () => {
     toast.success("Requirement removed.");
   };
 
-  /**
-   * ==================================================
-   * Submit requirements for review
-   * ==================================================
-   *
-   * This packages requirements into a message and sends it
-   * to the current chat (ideally the Senior Engineer).
+  /*
+  Submit requirements for review:
+  - packages requirements into a message and sends it to SSE chat
    */
   const handleSubmitForReview = async () => {
-    // If there are no requirements, stop and show error
     if (requirements.length === 0) {
       toast.error("Please add some requirements first");
       return;
     }
 
-    // Convert requirements list to a formatted text block
     const reqList = requirements
       .map((r) => `[${r.type.toUpperCase()}] ${r.description}`)
       .join("\n");
 
-    // Build final message
     const reviewMessage = `Please review the following requirements I've gathered:\n\n${reqList}`;
 
-    // Send it through normal message sending flow
     await handleSendMessage(reviewMessage);
   };
 
-  /**
-   * ==================================================
-   * Delete history handler
-   * ==================================================
-   *
-   * Clears:
-   * - all chat histories
-   * - all requirements
-   * This is a "reset scenario session" action.
-   */
+  /* Delete history handler */
   const handleDeleteHistory = async () => {
     setChatHistories({});
     setRequirements([]);
@@ -295,14 +238,10 @@ const Interview = () => {
     setShowDeleteDialog(false);
   };
 
-  /**
-   * ==================================================
-   * Render
-   * ==================================================
-   */
+  /* Render */
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* ===================== Header ===================== */}
+      {/* Header */}
       <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center">
           {/* Back button */}
@@ -339,7 +278,7 @@ const Interview = () => {
         </DropdownMenu>
       </header>
 
-      {/* ===================== Delete Confirmation Dialog ===================== */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -364,7 +303,7 @@ const Interview = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ===================== Main content ===================== */}
+      {/* Main content */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left: stakeholder list */}
         <StakeholderSidebar
